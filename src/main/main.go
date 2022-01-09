@@ -33,6 +33,7 @@ const (
 // non-exported methods
 // -----------------------------------------------------------------------------
 
+// setup signal handling
 func setupSignalHandling() {
 	LOG.Dbg("setting up signal handling")
 
@@ -48,6 +49,7 @@ func setupSignalHandling() {
 	}()
 }
 
+// check and process configuration file argument
 func processCfgFileArgument() int {
 	if len(os.Args) != maxNumberOfArgument {
 		LOG.Crt("invalid number or arguments; expected '%d'", maxNumberOfArgument)
@@ -79,6 +81,7 @@ func processCfgFileArgument() int {
 	return rcExitSuccess
 }
 
+// initialize application runtime
 func initApplication() int {
 	if !LOG.Initialize(LOG.GetDefaultLevel()) {
 		return rcExitFailure
@@ -99,10 +102,12 @@ func initApplication() int {
 	return rcExitSuccess
 }
 
+// perform application runtime shutdown
 func shutdownApplication() {
 	LOG.Dbg("shutting down main application")
 }
 
+// main function and entry point
 func main() {
 	var rc = initApplication()
 
