@@ -1,3 +1,3 @@
 #!/bin/bash
 
-go run ./src/main/ etc/configuration.json
+go run ./src/main/ -c etc/configuration.json

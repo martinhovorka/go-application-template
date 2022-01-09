@@ -42,6 +42,10 @@ func initialize() int {
 	LOG.Dbg("initializing application")
 	appData.runMainLoop = true
 
+	// TODO: put another initialization tasks here
+
+	// TODO: -------------------------------------
+
 	return rcExitSuccess
 }
 
@@ -49,7 +53,20 @@ func initialize() int {
 func shutdown() int {
 	LOG.Dbg("shutting down application main loop")
 
+	// TODO: put another shutdown tasks here
+
+	// TODO: -------------------------------
+
 	return rcExitSuccess
+}
+
+// main loop iteration
+func mainLoopIteration() {
+	LOG.Dbg("main loop hearbeat")
+
+	// TODO: put main loop tasks per iteration here
+
+	// TODO: --------------------------------------
 }
 
 // main loop
@@ -61,11 +78,6 @@ func mainLoop() int {
 	}
 
 	return rcExitSuccess
-}
-
-// main loop iteration
-func mainLoopIteration() {
-	LOG.Dbg("main loop hearbeat")
 }
 
 // -----------------------------------------------------------------------------

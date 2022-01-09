@@ -25,6 +25,12 @@ type ConfigurationHolder struct {
 // -----------------------------------------------------------------------------
 var configuration *ConfigurationHolder = nil
 
+const (
+	cfgFileMinSize  = 2       // 2 bytes/chars minimum for valid JSON
+	cfgFileMaxSize  = 1048576 // 1 MB overflow protection
+	cfgUserReadable = 0x100
+)
+
 // -----------------------------------------------------------------------------
 // module global variables (exported)
 // -----------------------------------------------------------------------------
@@ -46,6 +52,28 @@ func printConfiguration() {
 
 // load JSON configuration from file
 func LoadConfiguration(configurationFile string) *ConfigurationHolder {
+	fileInfo, error := os.Stat(configurationFile)
+
+	if error != nil {
+		LOG.Crt("unable to find/open JSON configuration file '%s'", configurationFile)
+		return nil
+	}
+
+	if fileInfo.IsDir() || !fileInfo.Mode().IsRegular() {
+		LOG.Crt("configuration file '%s' is not a regular file", configurationFile)
+		return nil
+	}
+
+	if (fileInfo.Size() < cfgFileMinSize) || (fileInfo.Size() > cfgFileMaxSize) {
+		LOG.Crt("configuration file '%s' size invalid; valid size is between '%d' and '%d'", configurationFile, cfgFileMinSize, cfgFileMaxSize)
+		return nil
+	}
+
+	if fileInfo.Mode()&cfgUserReadable == 0 {
+		LOG.Crt("configuration file '%s' is not readable", configurationFile)
+		return nil
+	}
+
 	if configurationFile == "" {
 		LOG.Crt("name of configuration file must not be empty")
 		return nil

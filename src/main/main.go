@@ -6,8 +6,10 @@ package main
 import (
 	CFG "app/src/cfg"
 	LOG "app/src/log"
+	"flag"
 	"os"
 	"os/signal"
+	"syscall"
 )
 
 // -----------------------------------------------------------------------------
@@ -17,13 +19,6 @@ import (
 // -----------------------------------------------------------------------------
 // module global variables (non-exported)
 // -----------------------------------------------------------------------------
-
-const (
-	maxNumberOfArgument = 2
-	cfgFileMinSize      = 2       // 2 bytes/chars for valid JSON
-	cfgFileMaxSize      = 1048576 // 1 MB
-	cfgUserReadable     = 0x100
-)
 
 // -----------------------------------------------------------------------------
 // module global variables (exported)
@@ -39,57 +34,90 @@ func setupSignalHandling() {
 
 	signalChannel := make(chan os.Signal, 1)
 
-	// TODO: not necessary to exit on all signals
 	signal.Notify(signalChannel)
 
 	go func() {
-		s := <-signalChannel
-		LOG.Ntc("received '%s' signal; signum = '%d'", s.String(), s)
-		StopApplication()
+		for {
+			signalNumber := <-signalChannel
+			LOG.Dbg("received '%s' signal; signum = '%d'", signalNumber.String(), signalNumber)
+
+			switch signalNumber {
+			case syscall.SIGABRT:
+			case syscall.SIGALRM:
+			case syscall.SIGBUS:
+			case syscall.SIGCHLD:
+			// case syscall.SIGCLD: // duplicate value (SIGCHLD)
+			case syscall.SIGCONT:
+			case syscall.SIGFPE:
+			case syscall.SIGHUP:
+				StopApplication()
+			case syscall.SIGILL:
+			case syscall.SIGINT:
+				StopApplication()
+			// case syscall.SIGIO: // duplicate value (SIGPOLL)
+			// case syscall.SIGIOT: // duplicate value (SIGABRT)
+			case syscall.SIGKILL:
+			case syscall.SIGPIPE:
+			case syscall.SIGPOLL:
+			case syscall.SIGPROF:
+			case syscall.SIGPWR:
+			case syscall.SIGQUIT:
+				StopApplication()
+			case syscall.SIGSEGV:
+			case syscall.SIGSTKFLT:
+			case syscall.SIGSTOP:
+			// case syscall.SIGSYS: // duplicate value (SIGUNUSED)
+			case syscall.SIGTERM:
+				StopApplication()
+			case syscall.SIGTRAP:
+			case syscall.SIGTSTP:
+			case syscall.SIGTTIN:
+			case syscall.SIGTTOU:
+			case syscall.SIGUNUSED:
+			case syscall.SIGURG:
+			case syscall.SIGUSR1:
+			case syscall.SIGUSR2:
+			case syscall.SIGVTALRM:
+			case syscall.SIGWINCH:
+			case syscall.SIGXCPU:
+			case syscall.SIGXFSZ:
+			default:
+				LOG.Wrn("received signal '%s' is unknown; signum = '%d'", signalNumber.String(), signalNumber)
+			}
+		}
 	}()
 }
 
 // check and process configuration file argument
-func processCfgFileArgument() int {
-	if len(os.Args) != maxNumberOfArgument {
-		LOG.Crt("invalid number or arguments; expected '%d'", maxNumberOfArgument)
+func processArgumets() int {
+	var cfgFile string
+	flag.StringVar(&cfgFile, "c", "", "[-c cfg_file.json | --c cfg_file.json | -c=cfg_file.json | --c=cfg_file.json]")
+	flag.StringVar(&cfgFile, "cfg", "", "[-cfg cfg_file.json | --cfg cfg_file.json | -cfg=cfg_file.json | --cfg=cfg_file.json]")
+
+	flag.Parse()
+
+	if cfgFile == "" {
+		flag.Usage()
 		return rcExitFailure
+	} else {
+		appData.cfgFile = cfgFile
 	}
 
-	appData.cfgFile = os.Args[1]
-	fileInfo, error := os.Stat(appData.cfgFile)
-
-	if error != nil {
-		LOG.Crt("unable to find/open JSON configuration file '%s'", appData.cfgFile)
-		return rcExitFailure
-	}
-
-	if fileInfo.IsDir() || !fileInfo.Mode().IsRegular() {
-		LOG.Crt("configuration file '%s' is not a regular file", appData.cfgFile)
-		return rcExitFailure
-	}
-
-	if (fileInfo.Size() < cfgFileMinSize) || (fileInfo.Size() > cfgFileMaxSize) {
-		LOG.Crt("configuration file '%s' size invalid; valid size is between '%d' and '%d'", appData.cfgFile, cfgFileMinSize, cfgFileMaxSize)
-		return rcExitFailure
-	}
-
-	if fileInfo.Mode()&cfgUserReadable == 0 {
-		LOG.Crt("configuration file '%s' is not readable", appData.cfgFile)
-		return rcExitFailure
-	}
 	return rcExitSuccess
 }
 
 // initialize application runtime
 func initApplication() int {
+	// setup logging as a first step
 	if !LOG.Initialize(LOG.GetDefaultLevel()) {
-		return rcExitFailure
+		panic("unable to initialize logging!")
 	}
+
+	LOG.Inf("starting application...")
 
 	setupSignalHandling()
 
-	if processCfgFileArgument() != rcExitSuccess {
+	if processArgumets() != rcExitSuccess {
 		return rcExitFailure
 	}
 
@@ -99,16 +127,27 @@ func initApplication() int {
 
 	LOG.SetLevel(CFG.Get().LogLevel)
 
+	// TODO: put another init steps here
+
+	// TODO: ---------------------------
+
 	return rcExitSuccess
 }
 
 // perform application runtime shutdown
 func shutdownApplication() {
-	LOG.Dbg("shutting down main application")
+
+	// TODO: put another shutdown steps here
+
+	// TODO: -------------------------------
+
+	LOG.Inf("application runtime stopped...")
 }
 
 // main function and entry point
 func main() {
+
+	// initialize application; if initialization failed end immediately
 	var rc = initApplication()
 
 	if rc != rcExitSuccess {
@@ -116,6 +155,7 @@ func main() {
 		os.Exit(rc)
 	}
 
+	// run main application
 	rc = RunApplication()
 
 	if rc == rcExitSuccess {
@@ -124,6 +164,7 @@ func main() {
 		LOG.Err("application runtime ended with an error; code '%d'", rc)
 	}
 
+	// perform application shutdown
 	shutdownApplication()
 
 	os.Exit(rc)
